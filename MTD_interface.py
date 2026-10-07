@@ -4,6 +4,7 @@ import serial
 import serial.tools.list_ports
 import tkinter
 from tkinter import simpledialog
+import sys
 
 window = turtle.Screen()
 painter = turtle.Turtle()
@@ -67,6 +68,8 @@ def selected(selected):
         painter.write("PC readback", align="center", font=("Arial", 16))
     elif selected == 6:
         painter.write("PC writeback", align="center", font=("Arial", 16))
+    elif selected == 7:
+            painter.write("Exit interface", align="center", font=("Arial", 16))
 
 def test_output():
     painter.clear()
@@ -206,6 +209,15 @@ def write_test(detected):
     painter.goto(0, -20)
     painter.write(detected, align="center", font=("Arial", 16))
 
+def finish():
+    painter.clear()
+    painter.penup()
+    painter.goto(0, 150)
+    painter.write("Exiting...", align="center", font=("Impact", 30))
+    time.sleep(2)
+    controller.close()
+    sys.exit()
+
 is_connected = False
 while True:
     try:
@@ -252,6 +264,8 @@ while True:
                 pc_writeback()
             elif command == "14":
                 answer()
+            elif command == "15":
+                finish()
             else:
                 print("Invalad command: " + command)
                 
