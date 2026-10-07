@@ -2,6 +2,8 @@ import turtle
 import time
 import serial
 import serial.tools.list_ports
+import tkinter
+from tkinter import simpledialog
 
 window = turtle.Screen()
 painter = turtle.Turtle()
@@ -63,6 +65,8 @@ def selected(selected):
         painter.write("Test input", align="center", font=("Arial", 16))
     elif selected == 5:
         painter.write("PC readback", align="center", font=("Arial", 16))
+    elif selected == 6:
+        painter.write("PC writeback", align="center", font=("Arial", 16))
 
 def test_output():
     painter.clear()
@@ -103,6 +107,34 @@ def pc_readback():
     painter.goto(0, 150)
     painter.write("PC readback", align="center", font=("Impact", 30))
 
+def test_input():
+    painter.clear()
+    painter.penup()
+    painter.goto(0, 150)
+    painter.write("Test input", align="center", font=("Impact", 30))
+    painter.penup()
+    painter.goto(0, 120)
+    painter.write("Input morse", align="center", font=("Arial", 16))
+    painter.goto(0, 100)
+    painter.write("and see whats detected.", align="center", font=("Arial", 16))
+
+def pc_writeback():
+    painter.clear()
+    painter.penup()
+    painter.goto(0, 150)
+    painter.write("PC writeback", align="center", font=("Impact", 30))
+    painter.penup()
+    painter.goto(0, 120)
+    painter.write("Listen to the morse,", align="center", font=("Arial", 16))
+    painter.goto(0, 100)
+    painter.write("write what you hear.", align="center", font=("Arial", 16))
+
+def answer():
+    controller.reset_output_buffer()
+    controller.reset_input_buffer()
+    answer = simpledialog.askstring("MTD", "Write the signal you just heard:").lower()
+    controller.write(answer.encode())
+
 def q_letter(letter):
     painter.penup()
     painter.goto(0, 120)
@@ -121,7 +153,7 @@ def correct():
     painter.pencolor("Green")
     painter.goto(0, 40)
     painter.write("Way to go! Try the next one.", align="center", font=("Arial", 16))
-    time.sleep(3)
+    time.sleep(2)
     painter.goto(-150, 40)
     painter.pencolor("White")
     painter.pendown()
@@ -140,7 +172,7 @@ def incorrect():
     painter.pencolor("Red")
     painter.goto(0, 40)
     painter.write("Missed that one, Try again!", align="center", font=("Arial", 16))
-    time.sleep(3)
+    time.sleep(2)
     painter.goto(-150, 40)
     painter.pencolor("White")
     painter.pendown()
@@ -160,15 +192,31 @@ def write_display(speed):
     time.sleep(1)
     controller.reset_input_buffer()
 
+def write_test(detected):
+    painter.penup()
+    painter.pensize(50)
+    painter.goto(-100, 0)
+    painter.pencolor("white")
+    painter.pendown()
+    painter.fd(200)
+    painter.penup()
+    painter.goto(0, 0)
+    painter.pencolor("black")
+    painter.write("Detected morse:", align="center", font=("Arial", 16))
+    painter.goto(0, -20)
+    painter.write(detected, align="center", font=("Arial", 16))
+
 is_connected = False
 while True:
     try:
         if controller.in_waiting > 0:
-            command = controller.readline().decode('utf-8').strip()
+            command = str(controller.readline().decode('utf-8').strip())
             
             if not command:
                 continue 
-                
+
+            controller.reset_input_buffer()
+            
             if command == "0":
                 controller.write(b"request")
             elif command == "1":
@@ -195,8 +243,18 @@ while True:
             elif command[0] == "1" and command[1] == "0":
                 payload = command[2:]
                 q_letter(payload)
+            elif command == "11":
+                test_input()
+            elif command[0] == "1" and command[1] == "2":
+                payload = command[2:]
+                write_test(payload)
+            elif command == "13":
+                pc_writeback()
+            elif command == "14":
+                answer()
+            else:
+                print("Invalad command: " + command)
                 
     except Exception as e:
         print("Device connection lost or error")
         print(e)
-        exit
