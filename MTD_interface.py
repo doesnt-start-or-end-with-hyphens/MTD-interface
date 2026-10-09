@@ -8,6 +8,7 @@ import sys
 
 window = turtle.Screen()
 painter = turtle.Turtle()
+root = window._root
 wipe_mode = False
 
 arduino_ports = 0
