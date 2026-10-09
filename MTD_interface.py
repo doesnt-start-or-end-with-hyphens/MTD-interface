@@ -11,10 +11,12 @@ painter = turtle.Turtle()
 root = window._root
 wipe_mode = False
 
+#serarches for the arduino port
 arduino_ports = 0
 while not arduino_ports:
     arduino_ports = list(serial.tools.list_ports.grep("Arduino*"))
 
+#connects to the port
 target_port = arduino_ports[0].device
 print(f"Connected to port: {target_port}")
 controller = serial.Serial(port=target_port, baudrate=9600)
@@ -29,14 +31,17 @@ if controller.in_waiting > 0:
     print("Connected!")
 else:
     print("Exit")
-    exit()
+    controller.close()
+    sys.exit()
 
+#resets sending and reciving data
 controller.reset_input_buffer()
 controller.reset_output_buffer()
 
 painter.hideturtle()
 painter.speed(30)
 
+#draws teh menu screen
 def draw_menu():
     painter.clear()
     painter.penup()
@@ -47,6 +52,7 @@ def draw_menu():
     painter.write("Selected mode:", align="center", font=("Arial", 16))
     painter.penup()
 
+#changes the selected text to the selected option
 def selected(selected):
     painter.penup()
     painter.pensize(50)
@@ -62,7 +68,7 @@ def selected(selected):
     elif selected == 2:
         painter.write("Simple readback", align="center", font=("Arial", 16))
     elif selected == 3:
-        painter.write("Advacnced readback", align="center", font=("Arial", 16))
+        painter.write("Advanced readback", align="center", font=("Arial", 16))
     elif selected == 4:
         painter.write("Test input", align="center", font=("Arial", 16))
     elif selected == 5:
@@ -72,6 +78,7 @@ def selected(selected):
     elif selected == 7:
             painter.write("Exit interface", align="center", font=("Arial", 16))
 
+#sets screeen for test output
 def test_output():
     painter.clear()
     painter.penup()
@@ -83,6 +90,7 @@ def test_output():
     painter.goto(0, 100)
     painter.write("to tune the speed of the readouts.", align="center", font=("Arial", 16))
 
+#sets screeen for simple readback
 def simple_readback():
     painter.clear()
     painter.penup()
@@ -94,6 +102,7 @@ def simple_readback():
     painter.goto(0, 100)
     painter.write("then repeat it back using the black button.", align="center", font=("Arial", 16))
 
+#sets screeen for advanced readback
 def advanced_readback():
     painter.clear()
     painter.penup()
@@ -105,12 +114,14 @@ def advanced_readback():
     painter.goto(0, 100)
     painter.write("then repeat it back using the black button.", align="center", font=("Arial", 16))
 
+#sets screeen for pc readback
 def pc_readback():
     painter.clear()
     painter.penup()
     painter.goto(0, 150)
     painter.write("PC readback", align="center", font=("Impact", 30))
 
+#sets screeen for test input
 def test_input():
     painter.clear()
     painter.penup()
@@ -120,8 +131,9 @@ def test_input():
     painter.goto(0, 120)
     painter.write("Input morse", align="center", font=("Arial", 16))
     painter.goto(0, 100)
-    painter.write("and see whats detected.", align="center", font=("Arial", 16))
+    painter.write("and see what's detected.", align="center", font=("Arial", 16))
 
+#sets screeen for pc writeback
 def pc_writeback():
     painter.clear()
     painter.penup()
@@ -133,12 +145,15 @@ def pc_writeback():
     painter.goto(0, 100)
     painter.write("write what you hear.", align="center", font=("Arial", 16))
 
+#gets answer from user and sends it to controller
 def answer():
     controller.reset_output_buffer()
     controller.reset_input_buffer()
-    answer = simpledialog.askstring("MTD", "Write the signal you just heard:").lower()
-    controller.write(answer.encode())
+    user_ans = simpledialog.askstring("MTD", "Write the signal you just heard:", parent=root)
+    if user_ans:
+        controller.write(user_ans.lower().encode())
 
+#displays letter in pc readback mode
 def q_letter(letter):
     painter.penup()
     painter.goto(0, 120)
@@ -146,6 +161,7 @@ def q_letter(letter):
     painter.goto(0, 100)
     painter.write(letter, align="center", font=("Arial", 16))
 
+#types correct
 def correct():
     if wipe_mode:
         painter.penup()
@@ -165,6 +181,7 @@ def correct():
     painter.penup()
     painter.pencolor("Black")
 
+#types incorrect
 def incorrect():
     if wipe_mode:
         painter.penup()
@@ -184,6 +201,7 @@ def incorrect():
     painter.penup()
     painter.pencolor("Black")
 
+#shows the speed when in test output
 def write_display(speed):
     painter.goto(150, 250)
     painter.pencolor("White")
@@ -196,6 +214,7 @@ def write_display(speed):
     time.sleep(1)
     controller.reset_input_buffer()
 
+#shows the user what the system decoded
 def write_test(detected):
     painter.penup()
     painter.pensize(50)
@@ -210,6 +229,7 @@ def write_test(detected):
     painter.goto(0, -20)
     painter.write(detected, align="center", font=("Arial", 16))
 
+#closes the interface
 def finish():
     painter.clear()
     painter.penup()
@@ -220,9 +240,12 @@ def finish():
     sys.exit()
 
 is_connected = False
+#runs forever
 while True:
     try:
+        #only decodes if there is data
         if controller.in_waiting > 0:
+            #gets a command
             command = str(controller.readline().decode('utf-8').strip())
             
             if not command:
@@ -230,10 +253,12 @@ while True:
 
             controller.reset_input_buffer()
             
+            #does the respective actions
             if command == "0":
                 controller.write(b"request")
             elif command == "1":
                 draw_menu()
+            #allows command to carry arguments
             elif command[0] == "2":
                 payload = command[1:] 
                 selected(int(payload))
@@ -270,6 +295,7 @@ while True:
             else:
                 print("Invalad command: " + command)
                 
+    #error catching
     except Exception as e:
         print("Device connection lost or error")
         print(e)
